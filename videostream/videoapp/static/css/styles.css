@@ -1,0 +1,380 @@
+@import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap");
+
+*,
+*:after,
+*:before {
+	box-sizing: border-box;
+}
+
+:root {
+	--header-outer-height: 110px;
+	--header-inner-height: 70px;
+	--header-height-difference: calc(
+		var(--header-outer-height) - var(--header-inner-height)
+	);
+	--header-bg: #fff;
+}
+
+body {
+	font-family: "DM Sans", sans-serif;
+	background-color: #f2f5f7;
+	line-height: 1.5;
+	min-height: 300vh;
+	position: relative;
+}
+
+.responsive-wrapper {
+	width: 90%;
+	max-width: 1280px;
+	margin-left: auto;
+	margin-right: auto;
+}
+
+#programm{
+	width: 100%;
+	max-width: 100%;
+}
+
+/* "липкая шапка" */
+.header-outer {
+	/* прилепляем её */
+	height: var(--header-outer-height);
+	position: sticky;
+	top: calc(
+		var(--header-height-difference) * -1
+	); /* умножаем на -1, будет отрицательным */
+	display: flex;
+	align-items: center;
+
+	/* остальное */
+	background-color: var(--header-bg);
+	box-shadow: 0 2px 10px 0 rgba(0,0,0, 0.1);
+}
+
+.header-inner {
+	/* делаем его "липким" */
+	height: var(--header-inner-height);
+	position: sticky;
+	top: 0;
+
+	/* остальное */
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+}
+
+/* Стили остальных элементов */
+.header-logo img {
+	display: block;
+	height: calc(var(--header-inner-height) - 30px);
+}
+
+.header-navigation {
+	display: flex;
+	flex-wrap: wrap;
+}
+
+.header-navigation a,
+.header-navigation button {
+	font-size: 1.125rem;
+	color: inherit;
+	margin-left: 1.75rem;
+	position: relative;
+	font-weight: 500;
+}
+
+.header-navigation a {
+	display: none;
+	font-size: 1.125rem;
+	color: inherit;
+	text-decoration: none;
+}
+
+.header-navigation button {
+	border: 0;
+	background-color: transparent;
+	padding: 0;
+}
+
+.header-navigation a:hover:after,
+.header-navigation button:hover:after {
+	transform: scalex(1);
+}
+
+.header-navigation a:after,
+.header-navigation button:after {
+	transition: 0.25s ease;
+	content: "";
+	display: block;
+	width: 100%;
+	height: 2px;
+	background-color: currentcolor;
+	transform: scalex(0);
+	position: absolute;
+	bottom: -2px;
+	left: 0;
+}
+
+.main {
+	margin-top: 3rem;
+}
+
+.widget {
+	width: 95%;
+	border-radius: 8px;
+	box-shadow: 0 15px 30px 0 rgba(0,0,0, 0.1);
+	background-color: #fff;
+	padding: 2.5rem;
+	margin-left: auto;
+	margin-right: auto;
+	margin-bottom: 2rem;
+	font-size: 1.125rem;
+}
+
+.widget > * + * {
+	margin-top: 1.25em;
+}
+
+.widget h2 {
+	font-size: 1.5rem;
+	font-weight: 700;
+	line-height: 1.25;
+	text-align: center;
+}
+
+.widget code {
+	display: inline-block;
+	padding: 0.125em 0.25em;
+	border-radius: 2px;
+	background-color: #bee5d3;
+}
+
+.widget strong {
+	font-weight: 700;
+}
+
+.cont1{
+    padding: 50px 100px;
+}
+
+@media (min-width: 800px) {
+	.header-navigation a {
+		display: inline-block;
+	}
+
+	.header-navigation button {
+		display: none;
+	}
+}
+
+.main-content {
+    padding-top: 75px; /* Замените значение на высоту вашего фиксированного меню */
+	background-color: rgba(165, 161, 161, 0);
+    transition: all 0.5s ease; /* Добавим анимацию для плавного перехода */
+}
+
+.scroll {
+    transition: all 0.5s ease; /* Устанавливаем продолжительность и функцию распределения анимации */
+}
+
+/* Стили для окна кода */
+.code-box {
+    border: 2px solid #242127;
+    border-radius: 35px;
+    overflow: hidden;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    width: 70%;
+    margin: 50px auto; /* Выравнивание по центру по горизонтали и 20px отступ сверху и снизу */
+}
+
+
+.toggle-button {
+    background-color: #5434db;
+    color: rgb(0, 0, 0);
+    border: none;
+    border-radius: 5px 5px 0 0;
+    padding: 15px 20px; /* Отступы вокруг кнопки */
+    cursor: pointer;
+    width: 100%; /* Ширина кнопки 100% */
+    text-align: left;
+    font-weight: bold;
+    font-size: 24px;
+    transition: background-color 0.3s;
+    cursor: pointer;
+    display: flex;
+    align-items: center; /* Выравнивание по вертикали */
+	height: 75px;
+}
+
+.button-text{
+    color: white;
+}
+
+
+.toggle-button:hover {
+    background-color: #7d66e1;
+}
+
+.code-content {
+    padding: 5px; /* Внутренний отступ */
+    color: #fff;
+    border-radius: 0 0 10px 10px;
+    font-size: 16px;
+    line-height: 1.4;
+    display: none;
+}
+
+.code-content pre {
+    margin: 0;
+}
+
+
+.custom-button {
+    background-color: #5434db;
+    color: white;
+    padding: 12px 38px;
+    margin: 5px;
+    border: none;
+    border-radius: 15px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+	margin: 0 auto; /* Выравниваем блоки по центру горизонтально */
+	text-align: center;
+	font-size: 14px;
+}
+
+
+.custom-button:hover {
+    background-color: #7d66e1;
+}
+
+.custom-button:active {
+    transform: translateY(4px);
+}
+
+.button-container {
+    display: flex;
+    flex-direction: column;
+    margin-top: 40px;
+}
+
+
+.widget-wrapper {
+    display: flex;
+}
+
+.left-content,
+.right-content {
+    width: 48%; /* Устанавливаем ширину блоков (можно настроить по вашему вкусу) */
+	text-align: center;
+    margin: 0 auto; /* Выравниваем блоки по центру горизонтально */
+}
+
+#videoContainer {
+    max-width: 640px;
+    max-height: 400px;
+    overflow: hidden;
+    margin-top: 40px;
+}
+
+#videoContainer.active {
+    border: 2px solid #000;
+}
+
+
+#videoStream {
+    width: 100%; /* Заполнить доступное пространство в контейнере */
+    height: 100%; /* Автоматически рассчитать высоту для сохранения соотношения сторон */
+}
+
+#processedImage {
+    max-width: 640px;
+    max-height: 400px;
+    display: none;
+    text-align:center;
+    margin-top:26px;
+    transition: transform 0.3s ease;
+}
+
+
+.image-container {
+    display: flex;
+    justify-content: center;
+}
+
+#processedImage:hover {
+    transform: scale(1.2); /* Масштабирование на 20% при наведении */
+}
+
+.file-label {
+    position: relative;
+    display: inline-block;
+    padding: 10px 25px;
+    cursor: pointer;
+    background-color: #5434db;
+    color: white;
+    border-radius: 15px;
+    font-size: 14px;
+    vertical-align: top;
+}
+
+.file-label:hover {
+    background-color: #7d66e1;
+}
+
+.file-label:active {
+    transform: translateY(4px);
+}
+
+#photo {
+    display: none;
+}
+
+.file-icon {
+    margin-right: 10px;
+}
+
+
+.login-button {
+    padding: 5px 22px;
+    border: 2px solid #000;
+    border-radius: 15px;
+    margin-top:-5px;
+    transition: background-color 0.8s;
+    max-width: 220px;
+    width: 220px;
+    text-align: center;
+}
+
+.login-button:hover {
+    background: black;
+    color: white;
+    border: 2px solid #fff;
+}
+
+.user-button{
+    background: black;
+    padding: 5px 22px;
+    border-radius: 15px;
+    border: 2px solid #000;
+    margin-top:-5px;
+    margin-left: 1.75rem;
+    color:white;
+    max-width: 220px;
+    width: 220px;
+    text-align: center;
+    transition: background-color 0.8s;
+}
+
+p{
+    text-indent: 20px;
+}
+
+.play_programm{
+    padding: 0 50px 0 50px;
+}
+
+.language-javascript{
+    background-color: #7d66e1;
+}
+
