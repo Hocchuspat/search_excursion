@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django_sass',
 ]
 
 MIDDLEWARE = [
@@ -117,6 +118,11 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
 
 STATIC_URL = 'static/'
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, "static"),
+]
+
+LOGIN_URL = '/login/'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
@@ -127,10 +133,20 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 
+EMAIL_HOST = 'smtp.mail.ru'
+EMAIL_PORT = 587  # Порт SMTP сервера mail.ru
+EMAIL_HOST_USER = 'eigorbunov@mail.ru'  # Ваша почта на mail.ru
+EMAIL_HOST_PASSWORD = 'd7caLmfetwvP18TFpXdh'  # Пароль от вашей почты на mail.ru
+EMAIL_USE_TLS = True  # Использование TLS для безопасного соединения
+
+DEFAULT_FROM_EMAIL = 'eigorbunov@mail.ru'
 
 AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
 ]
 
 LOGIN_REDIRECT_URL = '/'
+
+SASS_PROCESSOR_ROOT = os.path.join(BASE_DIR, 'static')

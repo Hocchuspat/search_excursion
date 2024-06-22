@@ -1,254 +1,89 @@
 # views.py
 from django.shortcuts import render, redirect
-from django.http import StreamingHttpResponse
-import cv2
-import numpy as np
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth import login
 from django.contrib.auth.views import LoginView
 from django.contrib import messages
 from django.contrib.auth.models import User
 from django.contrib.auth import logout
-import os
-import time
+import requests
 from django.http import JsonResponse
-
-
-
-color = (0, 255, 0)
-active_camera = None
-class VideoCamera(object):
-    def __init__(self):
-        self.video = None
-        self.faceNet = cv2.dnn.readNet("/Users/egorbelov/test4/videostream/videoapp/vesa/opencv_face_detector_uint8.pb", "/Users/egorbelov/test4/videostream/videoapp/vesa/opencv_face_detector.pbtxt")
-        self.genderNet = cv2.dnn.readNet("/Users/egorbelov/test4/videostream/videoapp/vesa/gender_net.caffemodel", "/Users/egorbelov/test4/videostream/videoapp/vesa/gender_deploy.prototxt")
-        self.ageNet = cv2.dnn.readNet("/Users/egorbelov/test4/videostream/videoapp/vesa/age_net.caffemodel", "/Users/egorbelov/test4/videostream/videoapp/vesa/age_deploy.prototxt")
-        self.MODEL_MEAN_VALUES = (78.4263377603, 87.7689143744, 114.895847746)
-        self.genderList = ['Male', 'Female']
-        self.ageList = ['(0-2)', '(4-6)', '(8-12)', '(15-20)', '(25-32)', '(38-43)', '(48-53)', '(60-100)']
-        self.stopped = False  # Флаг для прерывания цикла
-        self.initialize_camera()
-
-    def initialize_camera(self):
-        if self.video is not None:
-            self.video.release()
-        self.video = cv2.VideoCapture(0)
-        self.stopped = False
-
-    def __del__(self):
-        self.stop()
-
-    def get_frame(self):
-        while not self.stopped:
-            success, frame = self.video.read()
-            if not success:
-                break
-
-            resultImg, faceBoxes = self.highlight_face(frame)
-            for faceBox in faceBoxes:
-                face = frame[max(0, faceBox[1]):
-                             min(faceBox[3], frame.shape[0] - 1), max(0, faceBox[0])
-                             :min(faceBox[2], frame.shape[1] - 1)]
-                blob = cv2.dnn.blobFromImage(face, 1.0, (227, 227), self.MODEL_MEAN_VALUES, swapRB=False)
-                self.genderNet.setInput(blob)
-                genderPreds = self.genderNet.forward()
-                gender = self.genderList[genderPreds[0].argmax()]
-
-                self.ageNet.setInput(blob)
-                agePreds = self.ageNet.forward()
-                age = self.ageList[agePreds[0].argmax()]
-
-                cv2.putText(resultImg, f'{gender}, {age}', (faceBox[0], faceBox[1] - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.8,
-                            (0, 255, 255), 2, cv2.LINE_AA)
-
-            ret, jpeg = cv2.imencode('.jpg', resultImg)
-            yield (b'--frame\r\n'
-                   b'Content-Type: image/jpeg\r\n\r\n' + jpeg.tobytes() + b'\r\n\r\n')
-            time.sleep(0.1)
-
-    def stop(self):
-        self.stopped = True
-        if self.video.isOpened():
-            self.video.release()
-
-    def highlight_face(self, frame, conf_threshold=0.7):
-        frame_opencv_dnn = frame.copy()
-        frame_height = frame_opencv_dnn.shape[0]
-        frame_width = frame_opencv_dnn.shape[1]
-        blob = cv2.dnn.blobFromImage(frame_opencv_dnn, 1.0, (300, 300), [104, 117, 123], True, False)
-        self.faceNet.setInput(blob)
-        detections = self.faceNet.forward()
-        face_boxes = []
-        for i in range(detections.shape[2]):
-            confidence = detections[0, 0, i, 2]
-            if confidence > conf_threshold:
-                x1 = int(detections[0, 0, i, 3] * frame_width)
-                y1 = int(detections[0, 0, i, 4] * frame_height)
-                x2 = int(detections[0, 0, i, 5] * frame_width)
-                y2 = int(detections[0, 0, i, 6] * frame_height)
-                face_boxes.append([x1, y1, x2, y2])
-                cv2.rectangle(frame_opencv_dnn, (x1, y1), (x2, y2), (0, 255, 0), int(round(frame_height / 150)), 8)
-        return frame_opencv_dnn, face_boxes
-
-    active_camera = None
-
-def video_feed(request):
-    global active_camera
-    if active_camera is None or active_camera.stopped:
-        active_camera = VideoCamera()
-    return StreamingHttpResponse(active_camera.get_frame(), content_type="multipart/x-mixed-replace;boundary=frame")
-
-def generate():
-    camera = VideoCamera()
-    for frame in camera.get_frame():
-        yield frame
-    camera.stop()
-
-
-def stopServerStream(request):
-    global active_camera
-    if active_camera:
-        active_camera.stop()
-    return JsonResponse({'status': 'success'})
-
-
-#Photo
-
-faceProto = "/Users/egorbelov/test4/videostream/videoapp/vesa/opencv_face_detector.pbtxt"
-faceModel = "/Users/egorbelov/test4/videostream/videoapp/vesa/opencv_face_detector_uint8.pb"
-genderProto = "/Users/egorbelov/test4/videostream/videoapp/vesa/gender_deploy.prototxt"
-genderModel = "/Users/egorbelov/test4/videostream/videoapp/vesa/gender_net.caffemodel"
-ageProto = "/Users/egorbelov/test4/videostream/videoapp/vesa/age_deploy.prototxt"
-ageModel = "/Users/egorbelov/test4/videostream/videoapp/vesa/age_net.caffemodel"
-
-MODEL_MEAN_VALUES = (78.4263377603, 87.7689143744, 114.895847746)
-genderList = ['Male', 'Female']
-ageList = ['(0-2)', '(4-6)', '(8-12)', '(15-20)', '(25-32)', '(38-43)', '(48-53)', '(60-100)']
-
-faceNet = cv2.dnn.readNet(faceModel, faceProto)
-genderNet = cv2.dnn.readNet(genderModel, genderProto)
-ageNet = cv2.dnn.readNet(ageModel, ageProto)
-
-def highlightFaceim(net, frame, conf_threshold=0.7):
-    # делаем копию текущего кадра
-    frameOpencvDnn = frame.copy()
-    # высота и ширина кадра
-    frameHeight = frameOpencvDnn.shape[0]
-    frameWidth = frameOpencvDnn.shape[1]
-    # преобразуем картинку в двоичный пиксельный объект
-    blob = cv2.dnn.blobFromImage(frameOpencvDnn, 1.0, (300, 300), [104, 117, 123], True, False)
-    # устанавливаем этот объект как входной параметр для нейросети
-    net.setInput(blob)
-    # выполняем прямой проход для распознавания лиц
-    detections = net.forward()
-    # переменная для рамок вокруг лица
-    faceBoxes = []
-    # перебираем все блоки после распознавания
-    for i in range(detections.shape[2]):
-        # получаем результат вычислений для очередного элемента
-        confidence = detections[0, 0, i, 2]
-        # если результат превышает порог срабатывания — это лицо
-        if confidence > conf_threshold:
-            # формируем координаты рамки
-            x1 = int(detections[0, 0, i, 3] * frameWidth)
-            y1 = int(detections[0, 0, i, 4] * frameHeight)
-            x2 = int(detections[0, 0, i, 5] * frameWidth)
-            y2 = int(detections[0, 0, i, 6] * frameHeight)
-            # добавляем их в общую переменную
-            faceBoxes.append([x1, y1, x2, y2])
-            # рисуем рамку на кадре
-            cv2.rectangle(frameOpencvDnn, (x1, y1), (x2, y2), color, int(round(frameHeight / 150)), 8)
-
-        faceBox = [x1, y1, x2, y2]
-        # обрезаем изображение до области лица
-        face = frame[y1:y2, x1:x2]
-        # получаем пол и возраст
-        gender, age = detectGenderAndAge(face)
-        # рисуем рамку на кадре
-        cv2.rectangle(frameOpencvDnn, (x1, y1), (x2, y2), color, int(round(frameHeight / 150)), 8)
-        # добавляем информацию о поле и возрасте
-        label = f'{genderList[gender]}, {ageList[age]}'
-        cv2.putText(frameOpencvDnn, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.8, color, 2, cv2.LINE_AA)
-
-    # возвращаем кадр с рамками
-    return frameOpencvDnn, faceBoxes
-
-def detectGenderAndAge(face):
-    blob = cv2.dnn.blobFromImage(face, 1.0, (227, 227), MODEL_MEAN_VALUES, swapRB=False)
-
-    # отправляем изображение лица в нейросеть для определения пола
-    genderNet.setInput(blob)
-    genderPreds = genderNet.forward()
-    gender = genderPreds[0].argmax()
-
-    # отправляем изображение лица в нейросеть для определения возраста
-    ageNet.setInput(blob)
-    agePreds = ageNet.forward()
-    age = agePreds[0].argmax()
-
-    # возвращаем индексы пола и возрастной категории
-    return gender, age
+from django.core.mail import send_mail
+from django.contrib.auth.decorators import login_required
+from .models import Excursion, Favorite
+from django.views.decorators.csrf import csrf_exempt
+import json
 
 def index(request):
-    processed_image_path = request.GET.get('processed_image_path', None)
-    return render(request, 'index.html', {'processed_image_path': processed_image_path})
+    return render(request, 'index.html')
 
 
-def process_image(request):
-    if request.method == 'POST':
-        # Получите идентификатор пользователя (здесь используется user_id, но вы можете использовать другой идентификатор)
-        user_id = request.user.id if request.user.is_authenticated else 'anonymous_user'
+def get_countries(request):
+    url = 'https://api.sputnik8.com/v1/countries?api_key=9bc84ec26f47bf3005dc55434b4b796a&username=partners+tpo50@sputnik8.com'
 
-        # Получите имя пользователя (если пользователь аутентифицирован)
-        user_name = request.user.username if request.user.is_authenticated else 'anonymous_user'
+    try:
+        response = requests.get(url)
+        data = response.json()
+        return JsonResponse(data, safe=False)
+    except Exception as e:
+        return JsonResponse({'error': str(e)})
 
-        img_data = request.FILES.get('photo', None)
+def get_cities(request, country_id):
+    url = 'https://api.sputnik8.com/v1/cities?api_key=9bc84ec26f47bf3005dc55434b4b796a&username=partners+tpo50@sputnik8.com'
 
-        if not img_data:
-            return JsonResponse({'error': 'Не предоставлены данные изображения'})
+    try:
+        response = requests.get(url)
+        data = response.json()
+        cities = [city for city in data if city['country_id'] == country_id]
+        return JsonResponse(cities, safe=False)
+    except Exception as e:
+        return JsonResponse({'error': str(e)})
 
-        try:
-            img_bytes = img_data.read()
-        except Exception as e:
-            return JsonResponse({'error': f'Ошибка чтения изображения: {str(e)}'})
+def get_categories(request, city_id):
+    url = f'https://api.sputnik8.com/v1/cities/{city_id}/categories?api_key=9bc84ec26f47bf3005dc55434b4b796a&username=partners+tpo50@sputnik8.com'
 
-        nparr = np.frombuffer(img_bytes, np.uint8)
-        img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+    try:
+        response = requests.get(url)
+        data = response.json()
+        categories = []
 
-        resultImg, faceBoxes = highlightFaceim(faceNet, img)
+        for category in data:
+            sub_categories = category.get('sub_categories', [])
+            for sub_category in sub_categories:
+                categories.append({
+                    'short_name': sub_category['short_name'],
+                    'slug': sub_category['slug']
+                })
 
-        _, img_encoded = cv2.imencode('.jpg', resultImg)
-
-        # Определите базовый путь к каталогу media/images_user
-        base_user_images_directory = 'media/images_user'
-
-        # Создайте подкаталог с именем пользователя
-        user_images_directory = os.path.join(base_user_images_directory, user_name)
-
-        # Проверьте, существует ли каталог пользователя, и создайте его, если нет
-        if not os.path.exists(user_images_directory):
-            os.makedirs(user_images_directory)
-
-        # Генерируйте уникальное имя файла с использованием временной метки
-        timestamp = str(int(time.time()))
-        filename = f'processed_image_{timestamp}.jpg'
-
-        # Составьте полный путь к файлу в images_user/имя_пользователя
-        file_path = os.path.join(user_images_directory, filename)
-
-        # Сохраните обработанное изображение в images_user/имя_пользователя
-        with open(file_path, 'wb') as f:
-            f.write(img_encoded.tobytes())
-
-        # Получите URL сохраненного изображения в images_user/имя_пользователя
-        processed_image_path = f'/{file_path}'
-
-        return JsonResponse({'processed_image_path': processed_image_path})
-    else:
-        return JsonResponse({'error': 'Недопустимый метод запроса'})
+        return JsonResponse(categories, safe=False)
+    except Exception as e:
+        return JsonResponse({'error': str(e)})
 
 
+def get_excursions(request, city_id, category_slug):
+    url = f'https://api.sputnik8.com/v1/products?city_id={city_id}&category_slug={category_slug}&api_key=9bc84ec26f47bf3005dc55434b4b796a&username=partners+tpo50@sputnik8.com'
+    try:
+        response = requests.get(url)
+        data = response.json()
+        excursions = []
 
+        for excursion in data:
+            if not excursion['image_big']:  # Проверяем, если image_big пустой
+                image_url = excursion.get('photo', '')  # Если пустой, читаем из photo
+            else:
+                image_url = excursion['image_big']
+
+            excursions.append({
+                'title': excursion['title'],
+                'price': excursion['price'],
+                'image_big': image_url,
+                'url': excursion['url'],
+                'customers_review_rating': excursion.get('customers_review_rating', 'Нет рейтинга')  # Добавляем поле rating
+            })
+
+        return JsonResponse(excursions, safe=False)
+    except Exception as e:
+        return JsonResponse({'error': str(e)})
 
 #Registr
 def custom_login_view(request, **kwargs):
@@ -293,3 +128,109 @@ def custom_registration_view(request):
 def logout_view(request):
     logout(request)
     return redirect('index')
+
+@login_required
+def favorite_page(request):
+    if request.user.is_authenticated:
+        favorites = Favorite.objects.filter(user=request.user).select_related('excursion')
+        return render(request, 'Favorite/favorite.html', {'favorites': favorites})
+        # Логика обработки запроса
+        #return render(request, 'Favorite/favorite.html')
+    else:
+        message = "Для доступа к избранному необходимо войти."
+        return render(request, 'index.html', {'message': message})
+
+
+def getUsername(request):
+    if request.user.is_authenticated:
+        return request.user.username
+    else:
+        return None
+
+
+
+def send_email(request):
+    if request.method == 'POST':
+        name = request.POST.get('name', '')
+        surname = request.POST.get('surname', '')
+        username = request.POST.get('username', '')
+        city = request.POST.get('city', '')
+
+        # Формируем текст письма
+        message = f"Имя: {name}\nФамилия: {surname}\nИмя пользователя: {username}\nГород: {city}"
+
+        # Отправляем письмо
+        send_mail(
+            'Новое сообщение с формы',
+            message,
+            'eigorbunov@mail.ru',  # Замените на свой адрес
+            ['belov-yegor@mail.ru'],  # Замените на адрес получателя
+            fail_silently=False,
+        )
+    return render(request, 'index.html')
+
+
+@csrf_exempt
+@login_required
+def add_to_favorites(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            title = data.get('title')
+            price = data.get('price')
+            rating = data.get('customers_review_rating')
+            image = data.get('image_big')
+            url = data.get('url')
+
+            # Найдем или создадим экскурсию
+            excursion, created = Excursion.objects.get_or_create(
+                title=title,
+                defaults={'price': price, 'customers_review_rating': rating, 'image_big': image, 'url': url}
+            )
+
+            # Добавим в избранное
+            favorite, created = Favorite.objects.get_or_create(user=request.user, excursion=excursion)
+            if created:
+                return JsonResponse({'status': 'success', 'message': 'Экскурсия добавлена в избранное'})
+            else:
+                return JsonResponse({'status': 'exists', 'message': 'Экскурсия уже в избранном'})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)})
+    else:
+        return JsonResponse({'status': 'error', 'message': 'Неверный метод запроса'})
+
+
+@login_required
+def get_favorites(request):
+    favorites = Favorite.objects.filter(user=request.user).select_related('excursion')
+    excursions = [{
+        'title': fav.excursion.title,
+        'price': str(fav.excursion.price),
+        'customers_review_rating': fav.excursion.customers_review_rating,
+        'image_big': fav.excursion.image_big,
+        'url': fav.excursion.url
+    } for fav in favorites]
+    return JsonResponse(excursions, safe=False)
+
+
+@login_required
+@csrf_exempt
+def remove_from_favorites(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            title = data.get('title')
+
+            # Находим экскурсию по названию
+            excursion = Excursion.objects.get(title=title)
+            favorite = Favorite.objects.get(user=request.user, excursion=excursion)
+            favorite.delete()
+            return JsonResponse({'status': 'success', 'message': 'Экскурсия удалена из избранного'})
+        except Excursion.DoesNotExist:
+            return JsonResponse({'status': 'error', 'message': 'Экскурсия не найдена'})
+        except Favorite.DoesNotExist:
+            return JsonResponse({'status': 'error', 'message': 'Экскурсия не в избранном'})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)})
+    else:
+        return JsonResponse({'status': 'error', 'message': 'Неверный метод запроса'})

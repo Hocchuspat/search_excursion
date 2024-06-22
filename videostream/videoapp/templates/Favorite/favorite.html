@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        head {
+            display: block; /* или любое другое нужное вам значение */
+        }
+
+        title {
+            display: block; /* или любое другое нужное вам значение */
+            margin: 0;
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        #back-to-top {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 10px 20px;
+            cursor: pointer;
+        }
+
+        #back-to-top:hover {
+            background-color: #0056b3;
+        }
+        header {
+            /*background-color: #007bff; /* Изменен цвет фона */
+            padding: 10px 0;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Добавлен тень */
+            position: relative;
+            z-index: 1000;
+        }
+
+        header::after {
+            content: "";
+            display: block;
+            width: 100%;
+            height: 2px; /* Высота черной полосы */
+            background-color: black; /* Цвет полосы */
+            position: absolute;
+            bottom: -5px; /* Полоса будет непосредственно под хедером */
+            left: 0;
+        }
+        footer {
+            background-color: #474747;
+            color: #fff;
+            text-align: center;
+            padding: 10px 0;
+            position: fixed;
+            width: 100%;
+            bottom: 0;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4; /* Изменено цвет фона */
+            color: #333; /* Изменен цвет текста */
+        }
+        h1{
+            text-align: center;
+        }
+
+        ul{
+            list-style-type: none;
+            text-align: right;
+            margin-right: 50px
+        }
+
+        ul li a {
+            color: black;
+            text-decoration: none;
+            font-size: 16px;
+            font-size: 18px;
+            font-weight: bold;
+            padding: 5px 20px;
+            box-sizing: border-box;
+        }
+
+        nav ul li a:hover {
+            border: 2px solid #000;
+            border-radius: 15px;
+            box-sizing: border-box;
+            padding: 3px 18px; /* Добавлено, чтобы компенсировать толщину границы */
+        }
+
+        .result-container {
+            margin: 40px auto;
+            padding: 20px;
+            background: #ffffff;
+            min-height: 470px;
+            width: 90%;
+            overflow: hidden;
+            transition: height 0.5s ease;
+            border: 1px solid #ddd;
+            border-radius: 12px;
+            background-color: #fafafa;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            margin-bottom: 150px;
+        }
+
+        .result-container.expanded {
+            height: auto;
+        }
+
+        .excursion {
+            display: inline-block;
+            width: 30%;
+            box-sizing: border-box;
+            margin: 10px;
+            vertical-align: top;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            background-color: #ffffff;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            transition: transform 0.3s ease;
+        }
+
+        .excursion:hover {
+            transform: translateY(-5px);
+        }
+
+        .excursion h3 {
+            font-size: 1.2em;
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .excursion p {
+            font-size: 1em;
+            color: #555;
+            margin-bottom: 10px;
+        }
+
+        .excursion img {
+            width: 100%;
+            border-radius: 5px;
+        }
+        .details-button {
+            display: inline-block;
+            margin-top: 10px;
+            padding: 10px 20px;
+            font-size: 1em;
+            color: #fff;
+            background-color: #007bff;
+            border: none;
+            border-radius: 5px;
+            text-decoration: none;
+            transition: background-color 0.3s ease;
+        }
+
+        .details-button:hover {
+            background-color: #0056b3;
+        }
+        .remove-button {
+            display: inline-block;
+            margin-top: 10px;
+            padding: 10px 20px;
+            font-size: 1em;
+            color: #fff;
+            background-color: #007bff;
+            border: none;
+            border-radius: 5px;
+            text-decoration: none;
+            transition: background-color 0.3s ease;
+        }
+
+        .remove-button:hover {
+            background-color: #0056b3;
+        }
+
+        .buttons-container {
+            display: flex; /* Располагаем дочерние элементы в строку */
+            justify-content: center; /* Выравниваем дочерние элементы по центру */
+            margin-top: 10px; /* Добавляем немного отступа сверху */
+        }
+
+        /* Обновляем стили кнопок, чтобы они занимали меньше пространства */
+        .details-button,
+        .remove-button {
+            flex: 1; /* Растягиваем кнопки по всей доступной ширине контейнера */
+            margin: 5 5px; /* Добавляем немного отступа между кнопками */
+        }
+    </style>
+
+</head>
+<body onload="populateFavorites()">
+    <header>
+        <h1>Избранное</h1>
+        <nav>
+
+            <ul>
+                <li><a href="/">Главная</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+<div id="favorites-container" class="result-container"></div>
+
+<script>
+        // Функция для прокрутки страницы вверх
+        function scrollToTop() {
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+        }
+
+        // Показываем или скрываем кнопку "Вверх" в зависимости от положения прокрутки
+        window.onscroll = function() {
+            if (document.body.scrollTop > 20 || document.documentElement.scrollTop > 20) {
+                document.getElementById("back-to-top").style.display = "block";
+            } else {
+                document.getElementById("back-to-top").style.display = "none";
+            }
+        };
+
+        // Функция для загрузки и отображения избранных экскурсий
+        function populateFavorites() {
+            const favoritesContainer = document.getElementById('favorites-container');
+            favoritesContainer.innerHTML = '';
+
+            fetch('/get_favorites/')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.length === 0) {
+                        favoritesContainer.textContent = 'У вас нет избранных экскурсий';
+                        favoritesContainer.style.fontSize = '2em';
+                    } else {
+                        data.forEach(excursion => {
+                            const excursionDiv = document.createElement('div');
+                            excursionDiv.classList.add('excursion');
+
+                            const title = document.createElement('h3');
+                            title.textContent = excursion.title;
+
+                            const price = document.createElement('p');
+                            price.textContent = `Стоимость: ${excursion.price}`;
+
+                            const rating = document.createElement('p');
+                            rating.textContent = `Рейтинг: ${excursion.customers_review_rating}`;
+
+                            const image = document.createElement('img');
+                            image.src = excursion.image_big;
+                            image.alt = excursion.title;
+
+                            const detailsButton = document.createElement('a');
+                            detailsButton.href = excursion.url;
+                            detailsButton.textContent = 'Узнать подробнее';
+                            detailsButton.classList.add('details-button');
+                            detailsButton.target = '_blank';
+
+                            const removeButton = document.createElement('button');
+                            removeButton.textContent = 'Удалить из избранного';
+                            removeButton.classList.add('remove-button');
+                            removeButton.addEventListener('click', () => {
+                                removeFromFavorites(excursion, excursionDiv);
+                            });
+
+                            excursionDiv.appendChild(title);
+                            excursionDiv.appendChild(price);
+                            excursionDiv.appendChild(rating);
+                            excursionDiv.appendChild(image);
+                            excursionDiv.appendChild(detailsButton);
+                            excursionDiv.appendChild(removeButton);
+
+                            favoritesContainer.appendChild(excursionDiv);
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    favoritesContainer.textContent = 'Произошла ошибка при загрузке данных';
+                });
+        }
+
+        function removeFromFavorites(excursion, excursionDiv) {
+            fetch('/remove_from_favorites/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify(excursion)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.status === 'success') {
+                    excursionDiv.remove();
+                    alert(data.message);
+                } else {
+                    alert(data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        }
+
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+    </script>
+    </main>
+
+    <footer>
+        <p>&copy; 2024 Путеводитель и туристический портал</p>
+    </footer>
+
+    <!-- Кнопка "Вверх" -->
+    <button id="back-to-top" onclick="scrollToTop()">Вверх</button>
+
+</body>
+</html>
